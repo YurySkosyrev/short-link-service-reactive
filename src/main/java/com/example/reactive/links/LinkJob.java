@@ -1,6 +1,6 @@
 package com.example.reactive.links;
 
-import com.example.general.common.ShortLink;
+import com.example.reactive.common.ShortLink;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,27 +19,27 @@ public class LinkJob {
         this.linksQueue = linksQueue;
     }
 
-
     @Scheduled(fixedRate = 1000L)
     public void freeLink(){
-        ShortLink shortLink = linksService.randomPull();
-        if(shortLink != null){
-            linksService.remove(shortLink.getCode());
-            linksQueue.add(shortLink.getCode());
-        }
+       linksService.randomPull().doOnSuccess(shortLink -> {
+           if(shortLink != null) {
+               linksService.remove(shortLink.getCode());
+               linksQueue.add(shortLink.getCode());
+           }
+       }).subscribe(System.out::println);
     }
 
     @Scheduled(fixedRate = 500L)
     public void bookLink(){
-        String link = linksQueue.poll();
-        if(link != null) {
-            linksService.save(new ShortLink(link, "google.com"));
-        }
+       String code = linksQueue.poll();
+       if(code != null) {
+           linksService.save(new ShortLink(code, "gmail.com"));
+       }
     }
 
     @Scheduled(fixedRate = 500L)
     public void useLink(){
-        ShortLink shortLink = linksService.randomPull();
-        System.out.println(shortLink);
+        linksService.randomPull().subscribe(System.out::println);
     }
+
 }
